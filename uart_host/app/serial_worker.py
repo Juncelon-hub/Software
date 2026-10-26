@@ -1,7 +1,7 @@
 """串口工作线程：所有串口 I/O 都在这个线程里完成。
 
 UI 线程通过 open_port / close_port / write_data 下发命令（内部走命令队列），
-收到的数据通过 data_received 信号以 Qt 队列连接安全地跨线程送回 UI。
+收到的数据通过 data_available 信号以跨线程队列连接安全地送回 UI。
 """
 
 import queue

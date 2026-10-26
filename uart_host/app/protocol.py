@@ -322,7 +322,7 @@ class BusMonitor:
             self._consume(need)
             self._pending_read = None
             state = self._devices.get(dev)
-            # 临时措施：读应答不参与状态推断（仅 0x33 帧驱动 GUI）。
+            # 读应答是否参与状态推断由 ONLY_0x33_OUTPUT_MODE 控制。
             if state is not None and not ONLY_0x33_OUTPUT_MODE:
                 state.apply_read(regaddr, chunk[:n])
                 dirty_devices.add(dev)

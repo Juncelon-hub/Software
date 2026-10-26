@@ -1,6 +1,6 @@
 """主窗口：串口配置 + 多设备状态面板。
 
-数据流：SerialWorker(线程) --data_received(bytes)--> MainWindow
+数据流：SerialWorker(线程) --data_available--> MainWindow
         --> BusMonitor 切帧校验 --> 设备影子 --> StatusPanel 更新卡片
 """
 
@@ -64,8 +64,9 @@ class MainWindow(QMainWindow):
         self._worker = SerialWorker(self)
         self._monitor = BusMonitor()
         self._connected = False
-        # 串口线程可能在很短时间内连续投递多个数据块。合并到一次 UI
-        # 刷新，避免日志和状态控件逐包重绘而阻塞事件循环。
+        # 串口线程可能在很短时间内连续投递多个数据块。每轮 GUI 事件只
+        # 解析有限字节（MAX_PARSE_BYTES_PER_TICK），剩余数据由这个 1ms
+        # 单次定时器续跑，避免积压时长时间阻塞事件循环。
         self._rx_buffer = bytearray()
         self._pending_snapshots = {}
         self._rx_metrics = {
@@ -407,7 +408,8 @@ class MainWindow(QMainWindow):
             self._worker.discard_received()
 
     def _flush_received_data(self):
-        """每 50 ms 最多刷新一次界面，串口数据不在此处丢弃。"""
+        """本轮最多解析 MAX_PARSE_BYTES_PER_TICK 字节，剩余字节由 1ms
+        单次定时器续跑。数据丢弃只发生在串口线程的有界缓冲里。"""
         if not self._rx_buffer:
             return
 
